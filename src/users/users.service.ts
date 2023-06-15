@@ -1,11 +1,14 @@
 /* eslint-disable prettier/prettier */
 import { Injectable } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
+import { createHash } from 'crypto';
+
 
 export type User = {
   userId: number,
   username: string,
-  password: string
+  password: string,
+  salt: string
 };
 
 @Injectable()
@@ -20,15 +23,23 @@ export class UsersService {
   }
 
   async create(userData: any): Promise<any> {
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(userData.password, salt);
+    const salt = randomBytes(16).toString('hex');
+    const password = this.saltAndHash(userData.password, salt);
     const userId = Date.now();
 
     this.users.push({
       userId: userId,
       username: userData.username,
-      password: hashedPassword,
+      password: password,
+      salt
     });
     return true;
   }
+  saltAndHash(password: string, salt: string): string {
+    const saltedPassword = password + salt;
+    return createHash('sha256').update(saltedPassword).digest('hex');
+  }
 }
+
+
+
